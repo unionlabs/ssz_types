@@ -32,18 +32,9 @@ pub use typenum;
 ///
 /// let base: Vec<u64> = vec![1, 2, 3, 4];
 ///
-/// // Create a `FixedVector` from a `Vec` that has the expected length.
-/// let exact: FixedVector<_, typenum::U4> = FixedVector::from(base.clone());
+/// // Create a `FixedVector` from a `Vec` that has the expected length (an incorrect length will fail):
+/// let exact: FixedVector<_, typenum::U4> = base.clone().try_into().expect("length is valid");
 /// assert_eq!(&exact[..], &[1, 2, 3, 4]);
-///
-/// // Create a `FixedVector` from a `Vec` that is too long and the `Vec` is truncated.
-/// let short: FixedVector<_, typenum::U3> = FixedVector::from(base.clone());
-/// assert_eq!(&short[..], &[1, 2, 3]);
-///
-/// // Create a `FixedVector` from a `Vec` that is too short and the missing values are created
-/// // using `std::default::Default`.
-/// let long: FixedVector<_, typenum::U5> = FixedVector::from(base);
-/// assert_eq!(&long[..], &[1, 2, 3, 4, 0]);
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Derivative)]
 #[derivative(PartialEq, Hash(bound = "T: std::hash::Hash"))]
@@ -99,13 +90,25 @@ impl<T, N: Unsigned> FixedVector<T, N> {
     }
 }
 
-impl<T: Default, N: Unsigned> From<Vec<T>> for FixedVector<T, N> {
-    fn from(mut vec: Vec<T>) -> Self {
-        vec.resize_with(Self::capacity(), Default::default);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TryFromVecError {
+    InvalidLength { expected: usize, found: usize },
+}
 
-        Self {
-            vec,
-            _phantom: PhantomData,
+impl<T, N: Unsigned> TryFrom<Vec<T>> for FixedVector<T, N> {
+    type Error = TryFromVecError;
+
+    fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
+        if value.len() == N::USIZE {
+            Ok(Self {
+                vec: value,
+                _phantom: PhantomData,
+            })
+        } else {
+            Err(TryFromVecError::InvalidLength {
+                expected: N::USIZE,
+                found: value.len(),
+            })
         }
     }
 }
@@ -358,9 +361,12 @@ mod test {
 
     #[test]
     fn indexing() {
-        let vec = vec![1, 2];
+        let vec = vec![1, 2]
+            .into_iter()
+            .chain(vec![0; 8190])
+            .collect::<Vec<_>>();
 
-        let mut fixed: FixedVector<u64, U8192> = vec.clone().into();
+        let mut fixed: FixedVector<u64, U8192> = vec.clone().try_into().unwrap();
 
         assert_eq!(fixed[0], 1);
         assert_eq!(&fixed[0..1], &vec[0..1]);
@@ -372,24 +378,35 @@ mod test {
 
     #[test]
     fn length() {
-        let vec = vec![42; 5];
-        let fixed: FixedVector<u64, U4> = FixedVector::from(vec.clone());
-        assert_eq!(&fixed[..], &vec[0..4]);
+        assert_eq!(
+            FixedVector::<u64, U4>::try_from(vec![42; 5]),
+            Err(TryFromVecError::InvalidLength {
+                expected: 4,
+                found: 5
+            })
+        );
 
-        let vec = vec![42; 3];
-        let fixed: FixedVector<u64, U4> = FixedVector::from(vec.clone());
-        assert_eq!(&fixed[0..3], &vec[..]);
-        assert_eq!(&fixed[..], &vec![42, 42, 42, 0][..]);
+        assert_eq!(
+            FixedVector::<u64, U4>::try_from(vec![42; 3]),
+            Err(TryFromVecError::InvalidLength {
+                expected: 4,
+                found: 3
+            })
+        );
 
-        let vec = vec![];
-        let fixed: FixedVector<u64, U4> = FixedVector::from(vec);
-        assert_eq!(&fixed[..], &vec![0, 0, 0, 0][..]);
+        assert_eq!(
+            FixedVector::<u64, U4>::try_from(vec![]),
+            Err(TryFromVecError::InvalidLength {
+                expected: 4,
+                found: 0
+            })
+        );
     }
 
     #[test]
     fn deref() {
         let vec = vec![0, 2, 4, 6];
-        let fixed: FixedVector<u64, U4> = FixedVector::from(vec);
+        let fixed: FixedVector<u64, U4> = vec.try_into().unwrap();
 
         assert_eq!(fixed.first(), Some(&0));
         assert_eq!(fixed.get(3), Some(&6));
@@ -398,7 +415,7 @@ mod test {
 
     #[test]
     fn ssz_encode() {
-        let vec: FixedVector<u16, U2> = vec![0; 2].into();
+        let vec: FixedVector<u16, U2> = vec![0; 2].try_into().unwrap();
         assert_eq!(vec.as_ssz_bytes(), vec![0, 0, 0, 0]);
         assert_eq!(<FixedVector<u16, U2> as Encode>::ssz_fixed_len(), 4);
     }
@@ -411,26 +428,26 @@ mod test {
 
     #[test]
     fn ssz_round_trip_u16_len_8() {
-        ssz_round_trip::<FixedVector<u16, U8>>(vec![42; 8].into());
-        ssz_round_trip::<FixedVector<u16, U8>>(vec![0; 8].into());
+        ssz_round_trip::<FixedVector<u16, U8>>(vec![42; 8].try_into().unwrap());
+        ssz_round_trip::<FixedVector<u16, U8>>(vec![0; 8].try_into().unwrap());
     }
 
     #[test]
     fn tree_hash_u8() {
-        let fixed: FixedVector<u8, U0> = FixedVector::from(vec![]);
+        let fixed: FixedVector<u8, U0> = vec![].try_into().unwrap();
         assert_eq!(fixed.tree_hash_root(), merkle_root(&[0; 8], 0));
 
-        let fixed: FixedVector<u8, U1> = FixedVector::from(vec![0; 1]);
+        let fixed: FixedVector<u8, U1> = vec![0; 1].try_into().unwrap();
         assert_eq!(fixed.tree_hash_root(), merkle_root(&[0; 8], 0));
 
-        let fixed: FixedVector<u8, U8> = FixedVector::from(vec![0; 8]);
+        let fixed: FixedVector<u8, U8> = vec![0; 8].try_into().unwrap();
         assert_eq!(fixed.tree_hash_root(), merkle_root(&[0; 8], 0));
 
-        let fixed: FixedVector<u8, U16> = FixedVector::from(vec![42; 16]);
+        let fixed: FixedVector<u8, U16> = vec![42; 16].try_into().unwrap();
         assert_eq!(fixed.tree_hash_root(), merkle_root(&[42; 16], 0));
 
         let source: Vec<u8> = (0..16).collect();
-        let fixed: FixedVector<u8, U16> = FixedVector::from(source.clone());
+        let fixed: FixedVector<u8, U16> = source.clone().try_into().unwrap();
         assert_eq!(fixed.tree_hash_root(), merkle_root(&source, 0));
     }
 
@@ -454,28 +471,28 @@ mod test {
     fn tree_hash_composite() {
         let a = A { a: 0, b: 1 };
 
-        let fixed: FixedVector<A, U0> = FixedVector::from(vec![]);
+        let fixed: FixedVector<A, U0> = (vec![]).try_into().unwrap();
         assert_eq!(fixed.tree_hash_root(), merkle_root(&[0; 32], 0));
 
-        let fixed: FixedVector<A, U1> = FixedVector::from(vec![a]);
+        let fixed: FixedVector<A, U1> = (vec![a]).try_into().unwrap();
         assert_eq!(
             fixed.tree_hash_root(),
             merkle_root(a.tree_hash_root().as_bytes(), 0)
         );
 
-        let fixed: FixedVector<A, U8> = FixedVector::from(vec![a; 8]);
+        let fixed: FixedVector<A, U8> = (vec![a; 8]).try_into().unwrap();
         assert_eq!(
             fixed.tree_hash_root(),
             merkle_root(&repeat(a.tree_hash_root().as_bytes(), 8), 0)
         );
 
-        let fixed: FixedVector<A, U13> = FixedVector::from(vec![a; 13]);
+        let fixed: FixedVector<A, U13> = (vec![a; 13]).try_into().unwrap();
         assert_eq!(
             fixed.tree_hash_root(),
             merkle_root(&repeat(a.tree_hash_root().as_bytes(), 13), 0)
         );
 
-        let fixed: FixedVector<A, U16> = FixedVector::from(vec![a; 16]);
+        let fixed: FixedVector<A, U16> = (vec![a; 16]).try_into().unwrap();
         assert_eq!(
             fixed.tree_hash_root(),
             merkle_root(&repeat(a.tree_hash_root().as_bytes(), 16), 0)

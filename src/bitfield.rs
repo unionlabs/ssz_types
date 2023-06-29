@@ -46,7 +46,7 @@ pub type BitList<N> = Bitfield<Variable<N>>;
 /// See [Bitfield](struct.Bitfield.html) documentation.
 pub type BitVector<N> = Bitfield<Fixed<N>>;
 
-/// A heap-allocated, ordered, fixed-length, collection of `bool` values. Use of
+/// A heap-allocated, ordered, fixed-length collection of `bool` values. Use of
 /// [`BitList`](type.BitList.html) or [`BitVector`](type.BitVector.html) type aliases is preferred
 /// over direct use of this struct.
 ///
@@ -85,8 +85,8 @@ pub type BitVector<N> = Bitfield<Fixed<N>>;
 ///
 /// let mut bitvector = BitVector8::new();
 /// assert_eq!(bitvector.len(), 8); // `BitVector` length is fixed at the type-level.
-/// assert!(bitvector.set(7, true).is_ok());  // Setting inside the capacity is permitted.
-/// assert!(bitvector.set(9, true).is_err());  // Setting outside the capacity is not.
+/// assert!(bitvector.set(7, true).is_ok()); // Setting inside the capacity is permitted.
+/// assert!(bitvector.set(9, true).is_err()); // Setting outside the capacity is not.
 ///
 /// ```
 ///
@@ -160,6 +160,7 @@ impl<N: Unsigned + Clone> Bitfield<Variable<N>> {
                     len + 1
                 )
             });
+
         bitfield
             .set(len, true)
             .expect("len must be in bounds for bitfield.");

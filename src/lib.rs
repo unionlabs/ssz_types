@@ -26,8 +26,8 @@
 //! let mut example = Example {
 //!     bit_vector: Bitfield::new(),
 //!     bit_list: Bitfield::with_capacity(4).unwrap(),
-//!     variable_list: <_>::from(vec![0, 1]),
-//!     fixed_vector: <_>::from(vec![2, 3]),
+//!     variable_list: VariableList::try_from(vec![0, 1]).unwrap(),
+//!     fixed_vector: FixedVector::try_from(vec![2, 3, 0, 0, 0, 0, 0, 0]).unwrap(),
 //! };
 //!
 //! assert_eq!(example.bit_vector.len(), 8);
