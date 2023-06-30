@@ -2,6 +2,7 @@ use crate::tree_hash::vec_tree_hash_root;
 use crate::Error;
 use derivative::Derivative;
 use serde_derive::{Deserialize, Serialize};
+use ssz::BYTES_PER_LENGTH_OFFSET;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 use std::slice::SliceIndex;
@@ -224,24 +225,29 @@ where
     }
 }
 
-impl<T, N: Unsigned> ssz::Encode for VariableList<T, N>
+impl<T, N> ssz::Encode for VariableList<T, N>
 where
     T: ssz::Encode,
+    N: Unsigned,
 {
     fn is_ssz_fixed_len() -> bool {
-        <Vec<T>>::is_ssz_fixed_len()
-    }
-
-    fn ssz_fixed_len() -> usize {
-        <Vec<T>>::ssz_fixed_len()
-    }
-
-    fn ssz_bytes_len(&self) -> usize {
-        self.vec.ssz_bytes_len()
+        false
     }
 
     fn ssz_append(&self, buf: &mut Vec<u8>) {
-        self.vec.ssz_append(buf)
+        ssz::sequence_ssz_append(self.iter(), buf)
+    }
+
+    fn ssz_fixed_len() -> usize {
+        if Self::is_ssz_fixed_len() {
+            T::ssz_fixed_len() * N::USIZE
+        } else {
+            BYTES_PER_LENGTH_OFFSET
+        }
+    }
+
+    fn ssz_bytes_len(&self) -> usize {
+        ssz::sequence_ssz_bytes_len(self.iter())
     }
 }
 

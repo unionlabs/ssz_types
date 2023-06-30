@@ -209,26 +209,11 @@ where
     }
 
     fn ssz_bytes_len(&self) -> usize {
-        self.vec.ssz_bytes_len()
+        ssz::sequence_ssz_bytes_len(&self.vec)
     }
 
     fn ssz_append(&self, buf: &mut Vec<u8>) {
-        if T::is_ssz_fixed_len() {
-            buf.reserve(T::ssz_fixed_len() * self.len());
-
-            for item in &self.vec {
-                item.ssz_append(buf);
-            }
-        } else {
-            let mut encoder =
-                ssz::SszEncoder::container(buf, self.len() * ssz::BYTES_PER_LENGTH_OFFSET);
-
-            for item in &self.vec {
-                encoder.append(item);
-            }
-
-            encoder.finalize();
-        }
+        ssz::sequence_ssz_append(&self.vec, buf)
     }
 }
 
