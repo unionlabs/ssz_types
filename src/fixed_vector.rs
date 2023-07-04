@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 use std::slice::SliceIndex;
 use tree_hash::Hash256;
-use typenum::Unsigned;
+use typenum::{Const, ToUInt, Unsigned, U};
 
 pub use typenum;
 
@@ -114,6 +114,18 @@ impl<T, N: Unsigned> TryFrom<Vec<T>> for FixedVector<T, N> {
                 expected: N::USIZE,
                 found: value.len(),
             })
+        }
+    }
+}
+
+impl<T, const N: usize> From<[T; N]> for FixedVector<T, U<N>>
+where
+    Const<N>: ToUInt,
+{
+    fn from(value: [T; N]) -> Self {
+        Self {
+            vec: value.into(),
+            _phantom: PhantomData,
         }
     }
 }
