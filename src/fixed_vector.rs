@@ -331,7 +331,6 @@ mod test {
     use super::*;
     use ssz::*;
     use tree_hash::{merkle_root, TreeHash};
-    use tree_hash_derive::TreeHash;
     use typenum::*;
 
     #[test]
