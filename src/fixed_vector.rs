@@ -36,8 +36,13 @@ pub use typenum;
 /// let exact: FixedVector<_, typenum::U4> = base.clone().try_into().expect("length is valid");
 /// assert_eq!(&exact[..], &[1, 2, 3, 4]);
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize, Derivative)]
-#[derivative(PartialEq, Hash(bound = "T: std::hash::Hash"))]
+#[derive(Serialize, Deserialize, Derivative)]
+#[derivative(
+    Debug(bound = "T: ::core::fmt::Debug"),
+    Clone(bound = "T: ::core::clone::Clone"),
+    PartialEq(bound = "T: ::core::cmp::PartialEq"),
+    Hash(bound = "T: ::core::hash::Hash")
+)]
 #[serde(transparent)]
 pub struct FixedVector<T, N> {
     vec: Vec<T>,

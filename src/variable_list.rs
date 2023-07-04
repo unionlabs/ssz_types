@@ -44,8 +44,14 @@ pub use typenum;
 /// // Push a value to if it _does_ exceed the maximum.
 /// assert!(long.push(6).is_err());
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize, Derivative)]
-#[derivative(PartialEq, Eq, Hash(bound = "T: std::hash::Hash"))]
+#[derive(Serialize, Deserialize, Derivative)]
+#[derivative(
+    Debug(bound = "T: ::core::fmt::Debug"),
+    Clone(bound = "T: ::core::clone::Clone"),
+    PartialEq(bound = "T: ::core::cmp::PartialEq"),
+    Eq(bound = "T: ::core::cmp::Eq"),
+    Hash(bound = "T: ::core::hash::Hash")
+)]
 #[serde(transparent)]
 pub struct VariableList<T, N> {
     vec: Vec<T>,
