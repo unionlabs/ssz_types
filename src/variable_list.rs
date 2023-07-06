@@ -3,6 +3,7 @@ use crate::Error;
 use derivative::Derivative;
 use serde_derive::{Deserialize, Serialize};
 use ssz::BYTES_PER_LENGTH_OFFSET;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 use std::slice::SliceIndex;
@@ -46,7 +47,6 @@ pub use typenum;
 /// ```
 #[derive(Serialize, Deserialize, Derivative)]
 #[derivative(
-    Debug(bound = "T: ::core::fmt::Debug"),
     Clone(bound = "T: ::core::clone::Clone"),
     PartialEq(bound = "T: ::core::cmp::PartialEq"),
     Eq(bound = "T: ::core::cmp::Eq"),
@@ -56,6 +56,14 @@ pub use typenum;
 pub struct VariableList<T, N> {
     vec: Vec<T>,
     _phantom: PhantomData<N>,
+}
+
+impl<T: Debug, N: Unsigned> Debug for VariableList<T, N> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple(&format!("VariableList<{}>", N::USIZE))
+            .field(&self.vec)
+            .finish()
+    }
 }
 
 /// Maximum number of elements to pre-allocate in `try_from_iter`.
