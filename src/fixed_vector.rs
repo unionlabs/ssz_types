@@ -179,12 +179,27 @@ impl<T, N: Unsigned> DerefMut for FixedVector<T, N> {
     }
 }
 
+impl<T, N: Unsigned> AsRef<[T]> for FixedVector<T, N> {
+    fn as_ref(&self) -> &[T] {
+        self.vec.as_ref()
+    }
+}
+
 impl<'a, T, N: Unsigned> IntoIterator for &'a FixedVector<T, N> {
     type Item = &'a T;
     type IntoIter = std::slice::Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
+    }
+}
+
+impl<T, N: Unsigned> IntoIterator for FixedVector<T, N> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.vec.into_iter()
     }
 }
 

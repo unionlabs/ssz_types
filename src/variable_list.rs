@@ -190,6 +190,12 @@ impl<T, N: Unsigned> DerefMut for VariableList<T, N> {
     }
 }
 
+impl<T, N: Unsigned> AsRef<[T]> for VariableList<T, N> {
+    fn as_ref(&self) -> &[T] {
+        self.vec.as_ref()
+    }
+}
+
 impl<'a, T, N: Unsigned> IntoIterator for &'a VariableList<T, N> {
     type Item = &'a T;
     type IntoIter = std::slice::Iter<'a, T>;
