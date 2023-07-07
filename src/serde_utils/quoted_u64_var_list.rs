@@ -64,7 +64,7 @@ where
 #[cfg(test)]
 mod test {
     use crate::VariableList;
-    use serde_derive::{Deserialize, Serialize};
+    use serde::{Deserialize, Serialize};
     use typenum::U4;
 
     #[derive(Debug, Serialize, Deserialize)]

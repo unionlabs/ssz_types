@@ -1,7 +1,7 @@
 use crate::tree_hash::vec_tree_hash_root;
 use crate::Error;
 use derivative::Derivative;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use ssz::BYTES_PER_LENGTH_OFFSET;
 use std::fmt::Debug;
 use std::marker::PhantomData;

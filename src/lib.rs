@@ -13,6 +13,7 @@
 //! at v0.12.1.
 //!
 //! ## Example
+//!
 //! ```
 //! use ssz_types::*;
 //!
@@ -34,7 +35,6 @@
 //! assert_eq!(example.bit_list.len(), 4);
 //! assert_eq!(&example.variable_list[..], &[0, 1]);
 //! assert_eq!(&example.fixed_vector[..], &[2, 3, 0, 0, 0, 0, 0, 0]);
-//!
 //! ```
 
 #[macro_use]

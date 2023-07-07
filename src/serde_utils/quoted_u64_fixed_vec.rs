@@ -12,7 +12,7 @@ pub use crate::serde_utils::quoted_u64_var_list::serialize;
 #[cfg(test)]
 mod test {
     use crate::FixedVector;
-    use serde_derive::{Deserialize, Serialize};
+    use serde::{Deserialize, Serialize};
     use typenum::U4;
 
     #[derive(Debug, Serialize, Deserialize)]
